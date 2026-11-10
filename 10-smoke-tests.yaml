@@ -1,0 +1,82 @@
+# Кожен под друкує ядро, яке бачить. Очікування:
+#   runc-baseline  -> ядро хоста (AL2023)
+#   nitro-isolated -> власне гостьове ядро Nitro Sandbox
+#   nitro-codeexec -> власне ядро + немає мережі (лише lo)
+#   gvisor         -> ядро gVisor (Sentry)
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: runc-baseline
+spec:
+  nodeSelector: { sandbox-runtime: nitro }
+  tolerations:
+    - { key: sandbox, operator: Equal, value: nitro, effect: NoSchedule }
+  containers:
+    - name: probe
+      image: public.ecr.aws/docker/library/busybox:1.36
+      command: ["sh", "-c", "echo runtime=runc kernel=$(uname -r); sleep 3600"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nitro-isolated
+spec:
+  runtimeClassName: isolated-sandbox
+  nodeSelector: { sandbox-runtime: nitro }
+  tolerations:
+    - { key: sandbox, operator: Equal, value: nitro, effect: NoSchedule }
+  containers:
+    - name: probe
+      image: public.ecr.aws/docker/library/busybox:1.36
+      command: ["sh", "-c", "echo runtime=nitro kernel=$(uname -r) cpus=$(grep -c ^processor /proc/cpuinfo); sleep 3600"]
+      resources:
+        requests: { cpu: "1", memory: 512Mi }
+        limits:   { cpu: "1", memory: 512Mi }
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nitro-codeexec
+  annotations:
+    sandbox.amazonaws.com/network-isolated: "true"
+spec:
+  runtimeClassName: isolated-sandbox
+  nodeSelector: { sandbox-runtime: nitro }
+  tolerations:
+    - { key: sandbox, operator: Equal, value: nitro, effect: NoSchedule }
+  containers:
+    - name: exec
+      image: public.ecr.aws/docker/library/busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "runtime=nitro-network-isolated kernel=$(uname -r)"
+          echo "interfaces: $(ls /sys/class/net | tr '\n' ' ')"
+          if wget -q -T 3 -O /dev/null http://aws.amazon.com; then
+            echo "NETWORK: REACHABLE (unexpected)"
+          else
+            echo "NETWORK: blocked (expected)"
+          fi
+          sleep 3600
+      # HTTP/TCP-проби тут не працюють — лише exec
+      readinessProbe:
+        exec: { command: ["true"] }
+      resources:
+        requests: { cpu: "1", memory: 512Mi }
+        limits:   { cpu: "1", memory: 512Mi }
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gvisor
+spec:
+  runtimeClassName: gvisor
+  containers:
+    - name: probe
+      image: public.ecr.aws/docker/library/busybox:1.36
+      command: ["sh", "-c", "echo runtime=gvisor kernel=$(uname -r); dmesg 2>/dev/null | head -2; sleep 3600"]
+      resources:
+        requests: { cpu: "1", memory: 512Mi }
+        limits:   { cpu: "1", memory: 512Mi }

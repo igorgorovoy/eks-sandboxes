@@ -1,0 +1,56 @@
+# Біжить на пулах з лейблом sandbox-runtime (gvisor-пул живе в nitro-vm-files):
+# microvm має показати kvm=yes, gvisor — kvm=no.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kvm-check
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app: kvm-check
+  template:
+    metadata:
+      labels:
+        app: kvm-check
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: sandbox-runtime
+                    operator: Exists
+      tolerations:
+        - key: sandbox
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: check
+          image: public.ecr.aws/docker/library/busybox:1.36
+          env:
+            - name: NODE
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          command:
+            - sh
+            - -c
+            - |
+              VMX=$(grep -c -w vmx /proc/cpuinfo || true)
+              if [ -c /host/dev/kvm ]; then KVM=yes; else KVM=no; fi
+              echo "node=$NODE vmx_cpus=$VMX kvm=$KVM"
+              sleep 3600
+          securityContext:
+            runAsUser: 65534
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            - name: dev
+              mountPath: /host/dev
+              readOnly: true
+      volumes:
+        - name: dev
+          hostPath:
+            path: /dev

@@ -1,0 +1,39 @@
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="BOUNDARY"
+
+--BOUNDARY
+Content-Type: application/node.eks.aws
+
+---
+apiVersion: node.eks.aws/v1alpha1
+kind: NodeConfig
+spec:
+  containerd:
+    # УВАГА: синтаксис для containerd 1.7 (config v2).
+    # Якщо на ноді containerd 2.x (перевір: containerd --version),
+    # заміни секцію на:
+    #   [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runsc]
+    config: |
+      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runsc]
+        runtime_type = "io.containerd.runsc.v1"
+
+--BOUNDARY
+Content-Type: text/x-shellscript; charset="us-ascii"
+
+#!/bin/bash
+set -euo pipefail
+# Зафіксуй конкретний реліз замість "latest" для відтворюваного бенчмарку
+GVISOR_RELEASE="latest"
+ARCH="$(uname -m)"
+URL="https://storage.googleapis.com/gvisor/releases/release/${GVISOR_RELEASE}/${ARCH}"
+
+cd /tmp
+curl -fsSLO "${URL}/runsc"
+curl -fsSLO "${URL}/runsc.sha512"
+curl -fsSLO "${URL}/containerd-shim-runsc-v1"
+curl -fsSLO "${URL}/containerd-shim-runsc-v1.sha512"
+sha512sum -c runsc.sha512 -c containerd-shim-runsc-v1.sha512
+chmod a+rx runsc containerd-shim-runsc-v1
+mv runsc containerd-shim-runsc-v1 /usr/local/bin/
+
+--BOUNDARY--

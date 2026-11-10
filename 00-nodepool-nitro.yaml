@@ -1,0 +1,39 @@
+# Auto Mode NodePool, прибитий до m8i.xlarge — той самий тип, що й gVisor-пул.
+# ГІПОТЕЗА: перевір, що поди з isolated-sandbox плануються на кастомний NodePool.
+# Якщо ні — спершу запусти smoke-тест на вбудованому general-purpose пулі.
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: sandbox-nitro
+spec:
+  template:
+    metadata:
+      labels:
+        sandbox-runtime: nitro
+    spec:
+      nodeClassRef:
+        group: eks.amazonaws.com
+        kind: NodeClass
+        name: default
+      requirements:
+        - key: eks.amazonaws.com/instance-family
+          operator: In
+          values: ["m8i"]
+        - key: eks.amazonaws.com/instance-size
+          operator: In
+          values: ["xlarge"]
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["on-demand"]
+        - key: kubernetes.io/arch
+          operator: In
+          values: ["amd64"]
+      taints:
+        - key: sandbox
+          value: nitro
+          effect: NoSchedule
+  limits:
+    cpu: "32"
+  disruption:
+    consolidationPolicy: WhenEmptyOrUnderutilized
+    consolidateAfter: 5m
