@@ -81,6 +81,25 @@ sequenceDiagram
 
 Експеримент 1 — передумова для всіх інших.
 
+## Безпека (знахідки автоматичного рев'ю, розділ для статті)
+
+**HIGH — RBAC: create-pod примітив без обмежень спеки (30-agent-codeexec.yaml).**
+SA агента створює поди у своєму namespace з довільним spec: ні PSS, ні заборони hostPath/hostNetwork,
+ні фіксації runtimeClassName. Ланцюжок: prompt-injection / компрометація LLM-відповіді → код в агент-поді
+→ привілейований под на ноді. Плюс SA може delete+create configmaps — включно з власним агент-скриптом.
+
+Для демо це свідомий трейдофф (патерн статті — виконання LLM-коду), але в тексті статті його назвати прямо,
+і на експериментному дні зробити дешеві мітки:
+- [ ] namespace-лейбли PSS `audit: restricted` + `warn: restricted` (без enforce — зломить smoke/bench-поди, які йдуть як root);
+- [ ] `enforce: restricted` розписати як прод-рекомендацію + окремий контролер замість SA в поді (Job з коротким токеном);
+- [ ] `resourceNames` на configmaps не годиться: імена таск-CM динамічні (`codeexec-<ts>-<rnd>`) — фіксувати glob'ом неможливо;
+- [ ] згенерований код ізольований (automount=false, network-isolated) — ця половина схеми в порядку.
+
+**MEDIUM — публічний endpoint кластера без CIDR-обмеження (cluster.tf).**
+`endpoint_public_access = true` без `endpoint_public_access_cidrs`. На день експериментів:
+- [ ] додати var `endpoint_public_access_cidrs` з IP оператора (приватний доступ уже ввімкнений);
+- для демо з дестроєм у той самий день — приймається як окремий рядок у розділі безпеки.
+
 ## Вартість (окремий рядок статті)
 
 Auto Mode стягує окрему плату поверх EC2; MNG-пули (gvisor, microvm) її не мають.
