@@ -1,7 +1,7 @@
-# microVM-пул (nested virtualization, Firecracker/Kata) — третій стовпець бенчмарку.
-# Історична альтернатива Nitro Sandboxes: див. абзац статті «чому вже не треба».
+# microVM pool (nested virtualization, Firecracker/Kata) — the third benchmark column.
+# A historical alternative to Nitro Sandboxes: see the article's "why it is no longer needed" paragraph.
 locals {
-  # AL2023 managed node group вимагає MIME multipart; EKS змерджить це зі своїм nodeadm-конфігом.
+  # AL2023 managed node groups require MIME multipart; EKS merges it with its nodeadm config.
   kvm_user_data = <<-EOT
     MIME-Version: 1.0
     Content-Type: multipart/mixed; boundary="//"
@@ -24,13 +24,13 @@ locals {
 resource "aws_launch_template" "microvm" {
   name_prefix = "${var.cluster_name}-microvm-"
 
-  # Головне: вмикаємо VT-x для гостя (L1), щоб KVM міг запускати microVM (L2).
+  # Key: enable VT-x for the guest (L1) so KVM can launch microVMs (L2).
   cpu_options {
     nested_virtualization = "enabled"
   }
 
-  # Агенти виконують недовірений код: hop limit 1 відрізає поди від IMDS.
-  # Доступ до AWS для подів — через EKS Pod Identity.
+  # Agents run untrusted code: hop limit 1 cuts pods off from IMDS.
+  # Pods reach AWS through EKS Pod Identity.
   metadata_options {
     http_endpoint               = "enabled"
     http_tokens                 = "required"

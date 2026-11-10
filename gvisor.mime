@@ -9,9 +9,9 @@ apiVersion: node.eks.aws/v1alpha1
 kind: NodeConfig
 spec:
   containerd:
-    # УВАГА: синтаксис для containerd 1.7 (config v2).
-    # Якщо на ноді containerd 2.x (перевір: containerd --version),
-    # заміни секцію на:
+    # WARNING: syntax for containerd 1.7 (config v2).
+    # If the node runs containerd 2.x (check: containerd --version),
+    # replace the section with:
     #   [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runsc]
     config: |
       [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runsc]
@@ -22,7 +22,7 @@ Content-Type: text/x-shellscript; charset="us-ascii"
 
 #!/bin/bash
 set -euo pipefail
-# Зафіксуй конкретний реліз замість "latest" для відтворюваного бенчмарку
+# Pin a concrete release instead of "latest" for a reproducible benchmark
 GVISOR_RELEASE="latest"
 ARCH="$(uname -m)"
 URL="https://storage.googleapis.com/gvisor/releases/release/${GVISOR_RELEASE}/${ARCH}"

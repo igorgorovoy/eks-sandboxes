@@ -1,7 +1,7 @@
 output "cluster_name" { value = aws_eks_cluster.this.name }
 output "cluster_endpoint" { value = aws_eks_cluster.this.endpoint }
 
-# Кожен пул у своєму ресурсі — for_each тут нема.
+# Each pool is its own resource — no for_each here.
 output "gvisor_nodegroup" { value = aws_eks_node_group.gvisor.node_group_name }
 output "microvm_nodegroup" { value = aws_eks_node_group.microvm.node_group_name }
 output "microvm_launch_template" {

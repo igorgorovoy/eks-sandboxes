@@ -5,8 +5,8 @@ terraform {
     aws = {
       source  = "hashicorp/aws"
       version = ">= 6.0"
-      # >= 6.0 потрібна для: compute_config (Auto Mode) та cpu_options.nested_virtualization.
-      # Зафіксуй точну версію з CHANGELOG перед apply — для відтворюваності статті.
+      # >= 6.0 is required for: compute_config (Auto Mode) and cpu_options.nested_virtualization.
+      # Pin the exact version from the CHANGELOG before apply — for the article's reproducibility.
     }
   }
 }

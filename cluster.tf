@@ -23,7 +23,7 @@ resource "aws_iam_role_policy_attachment" "cluster" {
   policy_arn = "arn:aws:iam::aws:policy/${each.value}"
 }
 
-# ---------- Node IAM для Auto Mode нод ----------
+# ---------- Node IAM for Auto Mode nodes ----------
 resource "aws_iam_role" "auto_node" {
   name_prefix = "${var.cluster_name}-auto-node-"
   assume_role_policy = jsonencode({
@@ -45,7 +45,7 @@ resource "aws_iam_role_policy_attachment" "auto_node" {
   policy_arn = "arn:aws:iam::aws:policy/${each.value}"
 }
 
-# ---------- Cluster: Auto Mode (Nitro) + дві MNG (gVisor, microVM) ----------
+# ---------- Cluster: Auto Mode (Nitro) + two MNGs (gVisor, microVM) ----------
 resource "aws_eks_cluster" "this" {
   name     = var.cluster_name
   version  = var.kubernetes_version
@@ -58,7 +58,7 @@ resource "aws_eks_cluster" "this" {
     bootstrap_cluster_creator_admin_permissions = true
   }
 
-  # Auto Mode: compute, storage і LB вмикаються лише разом
+  # Auto Mode: compute, storage and LB are enabled only together
   compute_config {
     enabled       = true
     node_pools    = ["general-purpose", "system"]
@@ -86,7 +86,7 @@ resource "aws_eks_cluster" "this" {
   depends_on = [aws_iam_role_policy_attachment.cluster]
 }
 
-# Managed-аддони потрібні лише для MNG-нод (gVisor). Auto Mode ноди мають усе вбудоване.
+# Managed addons are needed only for MNG nodes (gVisor). Auto Mode nodes have everything built in.
 resource "aws_eks_addon" "core" {
   for_each = toset(["vpc-cni", "kube-proxy", "eks-pod-identity-agent"])
 

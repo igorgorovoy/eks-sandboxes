@@ -1,5 +1,5 @@
-# Біжить на пулах з лейблом sandbox-runtime (gvisor-пул живе в nitro-vm-files):
-# microvm має показати kvm=yes, gvisor — kvm=no.
+# Runs on every pool that carries the sandbox-runtime label:
+# microvm must report kvm=yes, gVisor — kvm=no.
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:

@@ -1,13 +1,13 @@
-# Патерн «агент + code-exec» для статті:
-# агент (isolated-sandbox, мережа є) виконує згенерований код у окремому поді
-# з network-isolated (без DNS, IMDS, Pod Identity і SA-токена).
-# Обмін — тільки через API-сервер: ConfigMap туди, exec-логи назад.
-# Чому не emptyDir — див. PLAN.md (pod-скиповний, а анотація pod-рівнева).
+# The "agent + code-exec" pattern for the article:
+# the agent (isolated-sandbox, has network) runs generated code in a separate pod
+# with network-isolated (no DNS, IMDS, Pod Identity, or SA token).
+# Exchange goes only through the API server: ConfigMap in, exec logs back.
+# Why not emptyDir — see PLAN.md (it is pod-scoped, and the annotation is pod-level).
 #
-# Гіпотези, які перевіряє цей маніфест (експеримент 5 у PLAN.md):
-#   1. ConfigMap монтується всередині sandbox VM
-#   2. network-isolated відрізає pod-мережу, але exec/логи kubelet живі
-#   3. SA-токен у network-isolated поді відсутній (automountServiceAccountToken: false)
+# Hypotheses this manifest verifies (experiment 5 in PLAN.md):
+#   1. A ConfigMap mounts inside the sandbox VM
+#   2. network-isolated cuts pod networking, but kubelet exec/logs still work
+#   3. The SA token is absent in a network-isolated pod (automountServiceAccountToken: false)
 ---
 apiVersion: v1
 kind: Namespace
@@ -20,7 +20,7 @@ metadata:
   name: agent
   namespace: agent-demo
 ---
-# RBAC тільки у своєму namespace: поди, їхні логи, configmaps — і все.
+# RBAC limited to its own namespace: pods, their logs, configmaps — that's it.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -51,9 +51,9 @@ roleRef:
   name: agent
   apiGroup: rbac.authorization.k8s.io
 ---
-# Скрипт агента. Без kubectl і jq — сирі REST-виклики curl'ом
-# (токен SA і CA вже змонтовані kubelet'ом; це файл, а не мережа).
-# Код передається через binaryData в base64 — щоб не екранувати JSON у shell.
+# Agent script. No kubectl and no jq — raw REST calls via curl
+# (the SA token and CA are already mounted by kubelet; it's a file, not the network).
+# The code is passed via binaryData as base64 — to avoid JSON-escaping in shell.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -72,19 +72,19 @@ data:
 
     req() { curl -sS --cacert "$CA" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" "$@"; }
 
-    # --- 1. Код ---
-    # Демо-режим: DEMO_CODE з env. Для LLM підстав свого провайдера нижче —
-    # патерн від цього не міняється: на виході блоку має бути $CODE.
-    CODE=${DEMO_CODE:?DEMO_CODE не задано}
-    # LLM-варіант (адаптуй під свого провайдера, напр. OpenAI-сумісний):
+    # --- 1. Code ---
+    # Demo mode: DEMO_CODE from env. For an LLM, plug in your provider below —
+    # the pattern is unchanged: $CODE must exist at this point.
+    CODE=${DEMO_CODE:?DEMO_CODE is not set}
+    # LLM variant (adapt to your provider, e.g. OpenAI-compatible):
     # CODE=$(req -X POST -H "Authorization: Bearer $LLM_API_KEY" \
-    #   -d '{"model":"...","messages":[{"role":"user","content":"напиши python-скрипт…"}]}' \
+    #   -d '{"model":"...","messages":[{"role":"user","content":"write a python script…"}]}' \
     #   "$LLM_API_URL" | ...extract)
 
     RUN_ID="codeexec-$(date +%s)-$RANDOM"
-    echo "[agent] код готовий, запускаю $RUN_ID"
+    echo "[agent] code ready, launching $RUN_ID"
 
-    # --- 2. ConfigMap з кодом (binaryData — без екранування) ---
+    # --- 2. ConfigMap with the code (binaryData — no escaping) ---
     CM="$RUN_ID-task"
     req -X POST -d '{
       "apiVersion":"v1","kind":"ConfigMap",
@@ -93,7 +93,7 @@ data:
     }' "$API/api/v1/namespaces/$NS/configmaps" >/dev/null
 
     # --- 3. codeexec-pod ---
-    # automountServiceAccountToken: false — згенерований код не має доступу до K8s API взагалі.
+    # automountServiceAccountToken: false — the generated code gets no access to the K8s API at all.
     req -X POST -d '{
       "apiVersion":"v1","kind":"Pod",
       "metadata":{"name":"'"$RUN_ID"'","namespace":"'"$NS"'",
@@ -113,7 +113,7 @@ data:
       }
     }' "$API/api/v1/namespaces/$NS/pods" >/dev/null
 
-    # --- 4. Чекаємо Succeeded/Failed (exec-канал kubelet → VM, не pod-мережа) ---
+    # --- 4. Wait for Succeeded/Failed (kubelet exec channel -> VM, not pod network) ---
     PHASE=Pending; i=0
     while [ "$PHASE" != "Succeeded" ] && [ "$PHASE" != "Failed" ] && [ $i -lt $TIMEOUT ]; do
       sleep 2; i=$((i+2))
@@ -121,20 +121,20 @@ data:
         | sed -n 's/.*"phase":"\([A-Za-z]*\)".*/\1/p' | head -1)
       PHASE=${PHASE:-Pending}
     done
-    echo "[agent] $RUN_ID: фаза=$PHASE за ${i}s"
+    echo "[agent] $RUN_ID: phase=$PHASE in ${i}s"
 
-    # --- 5. stdout згенерованого коду → назад агенту ---
+    # --- 5. Generated code stdout -> back to the agent ---
     echo "----- codeexec output -----"
     req "$API/api/v1/namespaces/$NS/pods/$RUN_ID/log"
     echo "----- end -----"
 
-    # --- 6. Прибираємо за собою ---
+    # --- 6. Clean up ---
     req -X DELETE "$API/api/v1/namespaces/$NS/pods/$RUN_ID" >/dev/null
     req -X DELETE "$API/api/v1/namespaces/$NS/configmaps/$CM" >/dev/null
     echo "[agent] cleanup done"
 ---
-# Агент: isolated-sandbox з мережею (LLM API, K8s API). SA-токен тут потрібен — цеProjected volume
-# від kubelet, а не IMDS; network-isolated його не чіпає (перевіряється експериментом 5).
+# Agent: isolated-sandbox with network (LLM API, K8s API). The SA token is required here — it is a projected
+# volume from kubelet, not IMDS; network-isolated does not touch it (verified by experiment 5).
 apiVersion: v1
 kind: Pod
 metadata:
@@ -148,11 +148,11 @@ spec:
     - { key: sandbox, operator: Equal, value: nitro, effect: NoSchedule }
   containers:
     - name: agent
-      # alpine: curl і base64 у комплекті після apk add; busybox wget без TLS-опцій не годиться для K8s API
+      # alpine: curl and base64 available after apk add; busybox wget's TLS is not enough for the K8s API
       image: public.ecr.aws/docker/library/alpine:3.21
       command: ["sh", "-c", "apk add --no-cache curl >/dev/null && sh /agent/agent.sh"]
       env:
-        # Демо-код: перевіряє власну ізоляцію і ріже в очі для статті.
+        # Demo code: self-checks its own isolation, and screenshots well for the article.
         - name: DEMO_CODE
           value: |
             echo "kernel: $(uname -r)"
@@ -168,7 +168,7 @@ spec:
               echo "SA token: absent — expected"
             fi
             echo "uid: $(id -u)"
-        # Для LLM: Secret з ключем, увімкни разом із блоком у agent.sh
+        # For LLM: Secret with the key, enable together with the block in agent.sh
         # - name: LLM_API_URL
         #   valueFrom: { secretKeyRef: { name: llm-credentials, key: url } }
         # - name: LLM_API_KEY

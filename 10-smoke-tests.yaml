@@ -1,8 +1,8 @@
-# Кожен под друкує ядро, яке бачить. Очікування:
-#   runc-baseline  -> ядро хоста (AL2023)
-#   nitro-isolated -> власне гостьове ядро Nitro Sandbox
-#   nitro-codeexec -> власне ядро + немає мережі (лише lo)
-#   gvisor         -> ядро gVisor (Sentry)
+# Each pod prints the kernel it sees. Expected:
+#   runc-baseline  -> host kernel (AL2023)
+#   nitro-isolated -> Nitro Sandbox guest kernel
+#   nitro-codeexec -> its own kernel + no network (lo only)
+#   gvisor         -> gVisor kernel (Sentry)
 ---
 apiVersion: v1
 kind: Pod
@@ -60,7 +60,7 @@ spec:
             echo "NETWORK: blocked (expected)"
           fi
           sleep 3600
-      # HTTP/TCP-проби тут не працюють — лише exec
+          # HTTP/TCP probes do not work here — exec probes only
       readinessProbe:
         exec: { command: ["true"] }
       resources:

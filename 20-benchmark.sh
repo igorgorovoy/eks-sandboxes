@@ -1,26 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Бенчмарк для статті «Hardware-isolated AI agents on EKS with Nitro Sandboxes (vs gVisor)».
+# Benchmark for the "Hardware-isolated AI agents on EKS with Nitro Sandboxes (vs gVisor)" article.
 #
-# Міряє:
-#   coldstart — час від apply до Ready для N подів кожного рантайму (per-pod + wall time).
-#               Перший прогін включає бутстрап ноди (Auto Mode / MNG) — прогін два рази,
-#               другий вважай «теплим».
-#   density   — скільки 1-vCPU подів реально влазить на ноду, доки решта не зависне в Pending.
-#               На m8i.xlarge (4 vCPU) гіпотеза: Nitro Sandbox ліміт 5× vCPU => ~20 подів.
-#               Скрипт міряє емпірично, а не за документацією.
+# Measures:
+#   coldstart — time from apply to Ready for N pods of each runtime (per-pod + wall time).
+#               The first run includes node bootstrap (Auto Mode / MNG) — run it twice,
+#               the second run counts as "warm".
+#   density   — how many 1-vCPU pods actually fit on a node until the rest hang in Pending.
+#               Hypothesis for m8i.xlarge (4 vCPU): Nitro Sandbox limit 5x vCPU => ~20 pods.
+#               The script measures empirically, not per the docs.
 #
-# Результати дописуються у benchmark-results.csv: metric,runtime,subject,value
+# Results are appended to benchmark-results.csv: metric,runtime,subject,value
 #
 # Before run: terraform apply, kubectl apply -f 01-runtimeclass-gvisor.yaml,
-# пройти smoke-тест (10-smoke-tests.yaml), зафіксувати версію gVisor у gvisor.mime.
+# pass the smoke test (10-smoke-tests.yaml), pin the gVisor version in gvisor.mime.
 #
-# Використання:
+# Usage:
 #   ./20-benchmark.sh coldstart [runtime ...]
 #   ./20-benchmark.sh density   [runtime ...]
 #   ./20-benchmark.sh cleanup
-# Runtimes: runc | nitro | nitro-net | gvisor (за замовчуванням усі)
+# Runtimes: runc | nitro | nitro-net | gvisor (all by default)
 # Env: N=10 (coldstart pods)  MAX=60 (density)  TIMEOUT=900  POLL_INTERVAL=2  CSV=benchmark-results.csv
 
 IMAGE="public.ecr.aws/docker/library/busybox:1.36"
@@ -31,7 +31,7 @@ TIMEOUT="${TIMEOUT:-900}"
 POLL_INTERVAL="${POLL_INTERVAL:-2}"
 
 for bin in kubectl jq; do
-  command -v "$bin" >/dev/null || { echo "потрібен $bin"; exit 1; }
+  command -v "$bin" >/dev/null || { echo "$bin is required"; exit 1; }
 done
 
 usage() {
@@ -43,7 +43,7 @@ runtimes_from_args() {
   if [ $# -gt 0 ]; then printf '%s\n' "$@"; else printf 'runc\nnitro\nnitro-net\ngvisor\n'; fi
 }
 
-# emit_pod RT ID -> YAML одного пода на stdout
+# emit_pod RT ID -> YAML of one pod on stdout
 emit_pod() {
   local rt="$1" id="$2"
   printf 'apiVersion: v1\nkind: Pod\nmetadata:\n  name: bench-%s-%s\n' "$rt" "$id"
@@ -57,8 +57,8 @@ emit_pod() {
   esac
   case "$rt" in
     runc|nitro|nitro-net)
-      # HTTP/TCP-проби не працюють у network-isolated пісочниці — тому проб немає в усіх,
-      # щоб порівняння було однаковим.
+      # HTTP/TCP probes do not work in the network-isolated sandbox — so no probes anywhere,
+      # to keep the comparison uniform.
       printf '  nodeSelector:\n    sandbox-runtime: nitro\n'
       printf '  tolerations:\n    - { key: sandbox, operator: Equal, value: nitro, effect: NoSchedule }\n'
       ;;
@@ -78,7 +78,7 @@ gen_manifest() {
 }
 
 pod_counters() {
-  # читає JSON з stdin: друкує "total ready"
+  # reads JSON from stdin: prints "total ready"
   jq -r '
     .items as $items |
     ($items | length | tostring) as $total |
@@ -88,7 +88,7 @@ pod_counters() {
   '
 }
 
-# Ready-час без наносекунд (jq fromdateiso8601 їх не парсить) — def підставляється в кожну jq-програму
+# Ready time without nanoseconds (jq fromdateiso8601 cannot parse them) — the def is injected into every jq program
 JQ_TS_DEF='def ts: sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601;'
 
 coldstart_once() {
@@ -105,7 +105,7 @@ coldstart_once() {
     read -r total ready <<<"$(pod_counters <<<"$json")"
     [ "$ready" = "$total" ] && break
     if [ $(( $(date +%s) - t0 )) -ge "$TIMEOUT" ]; then
-      echo "[$rt] TIMEOUT ${TIMEOUT}s: ready=$ready/$total (пишу те, що встигло)"
+      echo "[$rt] TIMEOUT ${TIMEOUT}s: ready=$ready/$total (writing what is ready)"
       break
     fi
     sleep "$POLL_INTERVAL"
@@ -149,7 +149,7 @@ density_once() {
     json=$(kubectl get pods -n "$ns" -o json)
     read -r total ready <<<"$(pod_counters <<<"$json")"
     if [ "$ready" = "$prev" ]; then
-      stable=$((stable + 1))   # Ready не росте три підряд => плато, виносимо вердикт
+      stable=$((stable + 1))   # Ready stops growing 3 checks in a row => plateau, deliver the verdict
     else
       stable=0; prev=$ready
     fi
@@ -160,7 +160,7 @@ density_once() {
   done
 
   nodes=$(jq -r '.items[] | select(any(.status.conditions[]?; .type=="Ready" and .status=="True")) | .spec.nodeName' <<<"$json" | sort | uniq -c | sort -rn)
-  echo "[$rt] density: ready=$ready/$total; по нодам:"
+  echo "[$rt] density: ready=$ready/$total; per node:"
   echo "$nodes"
   echo "$nodes" | awk -v rt="$rt" '{printf "density,%s,%s,%s\n", rt, $2, $1}' >>"$CSV"
   printf 'density,%s,TOTAL_READY,%s\n' "$rt" "$ready" >>"$CSV"
@@ -176,7 +176,7 @@ density() {
 }
 
 cleanup() {
-  echo "видаляю namespaces bench-cs-* та bench-den-*..."
+  echo "deleting namespaces bench-cs-* and bench-den-*..."
   kubectl get namespaces -o name | grep -E '^namespace/bench-(cs|den)-' | cut -d/ -f2 \
     | xargs -r kubectl delete namespace --wait=false
 }
@@ -191,4 +191,4 @@ case "$1" in
   *) usage ;;
 esac
 
-echo "результати: $CSV"
+echo "results: $CSV"

@@ -1,10 +1,10 @@
-# ---------- Приватні сабнети всередині дефолтного VPC ----------
-# Дефолтний VPC має тільки публічні сабнети, тому додаємо два приватні (2 AZ)
-# з NAT: нодам потрібен outbound для образів, SSM, ECR і завантаження gVisor —
-# без публічних IP на нодах.
+# ---------- Private subnets inside the default VPC ----------
+# The default VPC only has public subnets, so we add two private ones (2 AZs)
+# with NAT: nodes need outbound for images, SSM, ECR and the gVisor download —
+# without public IPs on the nodes.
 
-# Припущення: дефолтний VPC зазвичай /16. Якщо в тебе інший префікс —
-# поправь netnum у cidrsubnet нижче (препроцесія: /20 → newbits=4, netnum<16).
+# Assumption: the default VPC is usually a /16. If yours is different,
+# adjust netnum in cidrsubnet below (e.g. a /20 VPC -> newbits=4, netnum<16).
 locals {
   vpc_prefix = tonumber(split("/", data.aws_vpc.default.cidr_block)[1])
   subnet_ids = [for s in aws_subnet.private : s.id]
@@ -18,7 +18,7 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
-# NAT живе в наявному публічному сабнеті дефолтного VPC (AZ0)
+# NAT lives in an existing public subnet of the default VPC (AZ0)
 data "aws_subnets" "default_public" {
   filter {
     name   = "vpc-id"
@@ -64,8 +64,8 @@ resource "aws_subnet" "private" {
 
   map_public_ip_on_launch = false
 
-  # Karpenter/Auto Mode шукає сабнети за цим тегом; дублювання з кластерними
-  # subnet_ids навмисне — тег не шкодить, а гіпотезу перевіримо планом.
+  # Karpenter/Auto Mode discovers subnets by this tag; duplicating the cluster's
+  # subnet_ids is intentional — the tag is harmless, and the hypothesis gets checked by plan.
   tags = {
     Name                                         = "${var.cluster_name}-private-${count.index}"
     "karpenter.sh/discovery/${var.cluster_name}" = "true"
@@ -74,7 +74,7 @@ resource "aws_subnet" "private" {
   lifecycle {
     precondition {
       condition     = local.vpc_prefix <= 16
-      error_message = "Дефолтний VPC очікується /16 або ширше; при іншому префіксі поправ newbits/netnum у cidrsubnet."
+      error_message = "The default VPC is expected to be /16 or wider; otherwise adjust newbits/netnum in cidrsubnet."
     }
   }
 }

@@ -1,6 +1,7 @@
-# Auto Mode NodePool, прибитий до m8i.xlarge — той самий тип, що й gVisor-пул.
-# ГІПОТЕЗА: перевір, що поди з isolated-sandbox плануються на кастомний NodePool.
-# Якщо ні — спершу запусти smoke-тест на вбудованому general-purpose пулі.
+# Auto Mode NodePool pinned to m8i.xlarge — the same instance type as the gVisor pool.
+# HYPOTHESIS: check that pods with isolated-sandbox land on the custom NodePool.
+# If they stay Pending — drop the nodeSelector and run the smoke test on the built-in
+# general-purpose pool instead.
 apiVersion: karpenter.sh/v1
 kind: NodePool
 metadata:

@@ -1,4 +1,4 @@
-# ---------- Спільний IAM для обох MNG-пулів (gvisor + microvm) ----------
+# ---------- Shared IAM for both MNG pools (gvisor + microvm) ----------
 resource "aws_iam_role" "mng_node" {
   name_prefix = "${var.cluster_name}-mng-node-"
   assume_role_policy = jsonencode({
@@ -28,7 +28,7 @@ resource "aws_launch_template" "gvisor" {
   metadata_options {
     http_endpoint               = "enabled"
     http_tokens                 = "required"
-    http_put_response_hop_limit = 1 # агентські поди не бачать IMDS ноди
+    http_put_response_hop_limit = 1 # agents must not reach node IMDS
   }
 
   block_device_mappings {
@@ -41,7 +41,7 @@ resource "aws_launch_template" "gvisor" {
     }
   }
 
-  # MIME: NodeConfig (runsc у containerd) + скрипт встановлення gVisor
+  # MIME: NodeConfig (runsc in containerd) + gVisor install script
   user_data = base64encode(file("${path.module}/gvisor.mime"))
 
   lifecycle {
