@@ -29,7 +29,7 @@ The middle option looks like a software trick because it is one: gVisor reimplem
 
 The Nitro Sandbox route is different. Each pod becomes a micro-VM the way a Lambda function is one: the pod container runs inside a VM with its own kernel, started on the same EC2 instance you already rent. Two things follow from this:
 
-1. Secrets can be released only to sandboxes that prove their integrity with cryptographic attestation. That matters for regulated workloads and for anything where an agent holds credentials.
+1. Secrets can be released only to sandboxes that prove their integrity with cryptographic attestation: the sandbox's measurements live in PCR registers, and a KMS key policy with `kms:RecipientAttestation:PCR` conditions releases decryption keys only on a match. One caveat straight from the docs: without that key policy (or another external verifier) the measurement is recorded but never checked. That matters for regulated workloads and for anything where an agent holds credentials.
 2. The isolation boundary is hardware, the same one AWS uses between your instances and between a Lambda workload and its host.
 
 The old approach for "a real VM inside a pod" was Kata Containers on nested virtualization. It still works, but it now has an asterisk: nested virtualization is limited to 8th-gen Intel instances (c8i/m8i/r8i), it is not available on Graviton, and there is no attestation. Nitro Sandboxes lift all three (Graviton support: verify against the announcement before submit).
@@ -84,7 +84,7 @@ spec:
 Two details worth knowing before you debug:
 
 - Pods without the taint toleration and nodeSelector land on the standard runtime. The isolation is opt-in, per pod, not per cluster.
-- The `network-isolated` annotation removes the pod's network device entirely: no DNS, no IMDS, no Pod Identity credentials. That has a side effect you will hit immediately: HTTP and TCP probes stop working, so such pods take exec probes only.
+- The `network-isolated` annotation removes the pod's network device entirely: no DNS, no IMDS, no Pod Identity credentials. That has a side effect you will hit immediately: HTTP and TCP probes stop working, so such pods take exec probes only. `kubectl port-forward` does not reach a network-isolated pod at all; logs, exec and stats keep working over a vsock channel that does not depend on the pod network.
 
 The full bring-up on a default VPC took [NUMBER] minutes with `terraform apply` (31 resources: private subnets, a NAT gateway, the cluster, admin add-ons, two node groups). The interesting parts live in three files: the NodePool above, a `RuntimeClass` for gVisor, and a NodeConfig that teaches containerd about `runsc` and installs gVisor on node boot.
 
@@ -134,15 +134,16 @@ Method: for cold start, N pods of each runtime, time from `kubectl apply` to Rea
 
 Two expectations to check against your own run:
 
-- Density. A sandbox VM wants host resources beyond the container limits, and the working suspicion is a 5x vCPU factor for Nitro Sandboxes. On a 4-vCPU `m8i.xlarge` that would cap around [NUMBER] sandbox pods per node. gVisor has no such factor, so the crossover is where density beats start time.
+- Density. The docs are explicit here, and the numbers are higher than they look. Two caps apply per node, both sized at 5 times the node's vCPU count: the total vCPUs allocated across all sandboxes, and the number of sandboxes (the count cap is halved on CPU-overcommit instance types). A 4-vCPU `m8i.xlarge` therefore fits up to 20 single-vCPU sandboxes. Each sandbox pod also carries a fixed memory overhead the scheduler adds on top of the pod request: 256 MiB for `isolated-sandbox`, 512 MiB for `confidential-sandbox`. And on SMT instance types (all Intel, most AMD), core scheduling keeps two different sandboxes off the sibling threads of one core, so compute available to sandboxed pods is roughly half the advertised vCPUs; Graviton, one thread per core, is unaffected. That last detail changes the density math on `m8i` and is worth measuring directly. gVisor has none of these caps, so the crossover is where density beats start time.
 - Cost. Auto Mode charges a management fee on top of EC2 that managed node groups do not have. For an honest per-pod-hour comparison, include it as a separate row. NAT for the private subnets is about $0.045 per hour, and it bills whether or not your cluster has traffic, so tear the demo down after the run.
 
 ## Where it does not fit
 
 - **No GPU passthrough yet.** Local inference inside a Nitro Sandbox is not possible today. If your agents need a local model, the sandbox runs it over the network or you stay on gVisor, which inherits host GPUs through runc-compatible devices.
-- **No resize, no suspend.** A sandbox is created at a fixed size; changing it means recreating the pod. Idle agents keep paying for their resources. Snapshot and restore would make idle agents cheap; today that is future work.
+- **No resize, no snapshot.** CPU and memory are allocated at pod boot: in-place resize is not supported, they stay unless you delete and recreate the pod with new requests. The primitive today also has no snapshot and restore and no live migration, so idle agents keep paying for their resources.
 - **The agent's own privileges are the real risk.** Generated code is well fenced in this pattern (no network, no token, no API). The agent pod itself holds a create-pods permission in its namespace, and admission today does not gate its pod specs. For production, this needs a Pod Security Standards policy on the namespace and an admission gate on `runtimeClassName` and hostPath, or moving pod creation out of the model-facing pod entirely. The write-up of this pattern should state this plainly; the demo cannot.
 - **Public cluster endpoint.** This guide's cluster keeps `endpoint_public_access` on without a CIDR allowlist for the sake of a short demo. In anything long-lived, restrict it (`endpoint_public_access_cidrs`) or drop it, private access is already on.
+- **The vsock channel is a known surface.** The docs call it out themselves: the vsock device used for shim-to-agent communication is accessible to processes inside the guest, and any parent process with access to the Firecracker vsock socket can connect guest-bound ports, including on network-isolated pods. Not a classic network bypass, but the "no network device" line deserves this asterisk in a security review.
 
 ## Takeaways
 
@@ -161,9 +162,9 @@ PRE-SUBMIT TODO (from PLAN.md, experiment day):
 [ ] run smoke tests, fill in kernel evidence
 [ ] verify custom NodePool scheduling hypothesis (or drop that paragraph)
 [ ] run coldstart twice per runtime, fill p50/p90
-[ ] run density, fill the table and the 5x verdict
+[ ] run density, fill the table and compare against the documented caps (5x vCPU allocation + 5x sandbox count, halved on CPU-overcommit types; 256 MiB overhead per pod; SMT core-scheduling effect on m8i)
 [ ] run E2E agent demo, fill results
-[ ] confirm Graviton + attestation claims from official docs
+- verified against official docs Nov 10 2026: Graviton support, attestation KMS PCR caveat, no-GPU passthrough, no resize/snapshot/live-migration, K8s >= 1.36, no extra charge, exec/logs over vsock
 [ ] pin gVisor release in gvisor.mime and cite versions
 [ ] confirm Auto Mode fee figure from billing/pricing docs
 [ ] close or clearly flag the two security gaps before publishing manifests publicly
