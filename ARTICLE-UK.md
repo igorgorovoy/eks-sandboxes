@@ -155,6 +155,16 @@ sequenceDiagram
 
 Весь Terraform, маніфести, налаштування пода агента і скрипт бенчмарку лежать у [TODO: публічне посилання на репо до сабміту]; числа в таблицях заповнюються з прогонів, записаних у `benchmark-results.csv`.
 
+## Джерела
+
+- [Sandboxing on Amazon EKS](https://docs.aws.amazon.com/eks/latest/userguide/sandboxing.html) — key features, атестація, encrypted images
+- [Nitro Sandboxes considerations, EKS](https://docs.aws.amazon.com/eks/latest/userguide/sandboxing-limitations.html) — ліміти щільності, SMT core scheduling, resize й пристрої
+- [Network isolation](https://docs.aws.amazon.com/eks/latest/userguide/sandboxing-network-isolation.html) — exec-проби, поведінка vsock-каналу
+- [Autoscaling with Nitro Sandboxes](https://docs.aws.amazon.com/eks/latest/userguide/autoscaling.html) — slot overhead (256/512 MiB), провіженінг
+- [Setup paths on EKS](https://docs.aws.amazon.com/eks/latest/userguide/sandboxing-isolated-setup.html) — Auto Mode проти node groups, K8s >= 1.36
+- [Amazon EC2 Nitro Sandboxes](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/amazon-ec2-nitro-sandboxes.html) — підтримка інстансів (Intel/AMD/Graviton), вибір примітива
+- [gVisor documentation](https://gvisor.dev/docs/)
+
 <!--
 TODO до сабміту (з PLAN.md, день експериментів):
 [ ] прогнати smoke-тести, заповнити докази по ядрах

@@ -157,6 +157,16 @@ The pattern above (agent with network, code without) is small enough to be owned
 
 All Terraform, manifests, the agent pod setup and the benchmark script are in [TODO: public repo link by submit time]; numbers in the tables get filled in from the benchmark runs recorded in `benchmark-results.csv`.
 
+## Sources
+
+- [Sandboxing on Amazon EKS](https://docs.aws.amazon.com/eks/latest/userguide/sandboxing.html) — key features, attestation, encrypted images
+- [Nitro Sandboxes considerations, EKS](https://docs.aws.amazon.com/eks/latest/userguide/sandboxing-limitations.html) — density caps, SMT core scheduling, resize and device limitations
+- [Network isolation](https://docs.aws.amazon.com/eks/latest/userguide/sandboxing-network-isolation.html) — exec probes, vsock channel behavior
+- [Autoscaling with Nitro Sandboxes](https://docs.aws.amazon.com/eks/latest/userguide/autoscaling.html) — slot overhead (256/512 MiB), provisioning
+- [Setup paths on EKS](https://docs.aws.amazon.com/eks/latest/userguide/sandboxing-isolated-setup.html) — Auto Mode vs node groups, K8s >= 1.36
+- [Amazon EC2 Nitro Sandboxes](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/amazon-ec2-nitro-sandboxes.html) — instance support (Intel/AMD/Graviton), when to use what
+- [gVisor documentation](https://gvisor.dev/docs/)
+
 <!--
 PRE-SUBMIT TODO (from PLAN.md, experiment day):
 [ ] run smoke tests, fill in kernel evidence
