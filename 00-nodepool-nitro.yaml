@@ -37,6 +37,4 @@ spec:
     cpu: "32"
   disruption:
     consolidationPolicy: WhenEmptyOrUnderutilized
-    # 60m на час бенчмарків: інакше холодна нода консолідується між прогонами
-    # coldstart і «теплий» прогін стане холодним. Поверни 5m після бенчмарку.
-    consolidateAfter: 60m
+    consolidateAfter: 5m
