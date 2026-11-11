@@ -41,7 +41,10 @@ sha512sum -c gvisor.tar.zstd.sha512
 
 tar --zstd -xf gvisor.tar.zstd
 chmod a+rx runsc containerd-shim-runsc-v1
-mv runsc containerd-shim-runsc-v1 /usr/local/bin/
+# The shim resolves gvisor_sentry and friends relative to its own location:
+# install the gvisor-bin/ sidecars directory together with the binaries.
+chmod -R a+rx gvisor-bin
+mv runsc containerd-shim-runsc-v1 gvisor-bin /usr/local/bin/
 
 # Sanity check: runtime must print its version
 /usr/local/bin/runsc --version
