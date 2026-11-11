@@ -172,6 +172,31 @@ The pattern above is small enough for one person to own, and strict enough to su
 
 All Terraform, manifests, the agent pod setup and the benchmark script are in [github.com/igorgorovoy/eks-sandboxes](https://github.com/igorgorovoy/eks-sandboxes). The numbers in the tables come from the runs recorded in `benchmark-results.csv`.
 
+## Appendix: raw measurement data
+
+Everything below reads straight from `benchmark-results.csv` in the repo; times are per pod from `kubectl apply` to Ready.
+
+Cold start, warm node (second run), per pod, seconds:
+
+| runc | nitro isolated | nitro network-isolated | gVisor |
+|---|---|---|---|
+| 2, 1, 1, 1, 1, 1, 0, 0, 0, 1 | 4, 36, 36, 36, 37 (+1 pod at 1742: it waited for a new node) | 37, 38, 38, 38, 38, 37, 37 (+3 pending past the window) | 0, 0 (two pods; Ready flipped within the same second) + 8 pending |
+
+Wall time for the batches: runc 5 s, nitro 1802 s (dominated by node-wait), nitro-net 1808 s, gVisor 902 s.
+
+Cold start including node bootstrap (first run), runc, per pod, seconds: 37, 37, 37, 209, 209, 209, 209, 1, 1, 1. Wall 215 s across 4 nodes: three waves of pods, one per new node plus one wave on the node that already existed.
+
+Density, pods Ready per node (60 pods offered, 250m request / 1 vCPU limit):
+
+| Runtime | Ready per node | Total |
+|---|---|---|
+| runc | 3, 3, 3, 3 (four nodes) + 1 (on the busy nitro node) | 13/60 |
+| Nitro Sandbox | 15, 5 Pending | 15/20 offered |
+| gVisor | 2 | 2/60 |
+
+A negative number in the CSV means the pod was never Ready inside the measurement window; those rows map to the Pending counts above.
+
+
 ## Sources
 
 - [Sandboxing on Amazon EKS](https://docs.aws.amazon.com/eks/latest/userguide/sandboxing.html): key features, attestation, encrypted images

@@ -179,6 +179,31 @@ uid: 0
 
 Весь Terraform, маніфести, налаштування пода агента і скрипт бенчмарку лежать у [github.com/igorgovoy/eks-sandboxes](https://github.com/igorgorovoy/eks-sandboxes). Числа в таблицях з прогонів, записаних у `benchmark-results.csv`.
 
+## Додаток: сирі числа замірів
+
+Все нижче зчитується прямо з `benchmark-results.csv` у репо; час — по поду від `kubectl apply` до Ready.
+
+Cold start, тепла нода (другий прогін), per pod, секунди:
+
+| runc | nitro isolated | nitro network-isolated | gVisor |
+|---|---|---|---|
+| 2, 1, 1, 1, 1, 1, 0, 0, 0, 1 | 4, 36, 36, 36, 37 (+1 под на 1742: чекав нову ноду) | 37, 38, 38, 38, 38, 37, 37 (+3 Pending поза вікном) | 0, 0 (два поди: Ready перевернувся в ту саму секунду) + 8 Pending |
+
+Wall time батчів: runc 5 с, nitro 1802 с (домінує очікування ноди), nitro-net 1808 с, gVisor 902 с.
+
+Cold start з бутстрапом ноди (перший прогін), runc, per pod, секунди: 37, 37, 37, 209, 209, 209, 209, 1, 1, 1. Wall 215 с на 4 нодах: три хвилі подів, по одній на кожну нову ноду, плюс хвиля на ноді, що вже існувала.
+
+Щільність, поди Ready на ноду (пропонувалось 60 подів, request 250m / limit 1 vCPU):
+
+| Рантайм | Ready на ноду | Разом |
+|---|---|---|
+| runc | 3, 3, 3, 3 (чотири ноди) + 1 (на зайнятій nitro-ноді) | 13/60 |
+| Nitro Sandbox | 15, 5 у Pending | 15/20 запропонованих |
+| gVisor | 2 | 2/60 |
+
+Негативні числа в CSV означають, що под так і не став Ready у вікні заміру; ці строки відповідають Pending вище.
+
+
 ## Джерела
 
 - [Sandboxing on Amazon EKS](https://docs.aws.amazon.com/eks/latest/userguide/sandboxing.html): key features, атестація, encrypted images
