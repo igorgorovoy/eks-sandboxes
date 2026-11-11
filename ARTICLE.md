@@ -86,9 +86,9 @@ Two details worth knowing before you debug:
 - Pods without the taint toleration and nodeSelector land on the standard runtime. The isolation is opt-in, per pod, not per cluster.
 - The `network-isolated` annotation removes the pod's network device entirely: no DNS, no IMDS, no Pod Identity credentials. That has a side effect you will hit immediately: HTTP and TCP probes stop working, so such pods take exec probes only. `kubectl port-forward` does not reach a network-isolated pod at all; logs, exec and stats keep working over a vsock channel that does not depend on the pod network.
 
-The full bring-up on a default VPC took [NUMBER] minutes with `terraform apply` (31 resources: private subnets, a NAT gateway, the cluster, admin add-ons, two node groups). The interesting parts live in three files: the NodePool above, a `RuntimeClass` for gVisor, and a NodeConfig that teaches containerd about `runsc` and installs gVisor on node boot.
+The full bring-up on a default VPC took about 20 minutes with `terraform apply` (31 resources: private subnets, a NAT gateway, the cluster, admin add-ons, two node groups). The interesting parts live in three files: the NodePool above, a `RuntimeClass` for gVisor, and a NodeConfig that teaches containerd about `runsc` and installs gVisor on node boot.
 
-After the cluster came up, four probe pods confirmed the diagram from the table: runc printed the host kernel, the Nitro Sandbox pod printed a guest kernel, the network-isolated pod saw only `lo` and could not reach the internet, and the gVisor pod printed the Sentry kernel. [RESULTS, NUMBERS]
+After the cluster came up, four probe pods confirmed the diagram from the table: runc printed the host kernel (`6.18.56`, shared with its node), the Nitro Sandbox pod printed a different guest kernel (`6.18.54`) and exactly the vCPU count it requested, the network-isolated pod saw only `lo` and a dead DNS (`wget: bad address`, then `NETWORK: blocked`), and the gVisor pod printed the Sentry kernel (`4.19.0-gvisor`). Full outputs live in the repo, `evidence/runtime-evidence.txt`.
 
 ## The pattern: agent with network, code without it
 
@@ -120,7 +120,18 @@ Three implementation notes that cost me the most time to figure out:
 
 **The code-exec pod mounts no service account at all.** Set `automountServiceAccountToken: false` on it. Generated code should not be able to call the Kubernetes API, create pods, or read secrets, even though it already has no network. The RBAC around the agent is namespace-scoped: create and delete pods and ConfigMaps in its own namespace, get pod logs, nothing else.
 
-The full agent loop is one ConfigMap script and one pod spec; the manifest is [here](TODO-repo-link). On the default demo, the generated code self-checks its own isolation and prints `NETWORK: blocked`, `SA token: absent`. [E2E RUN RESULTS, NUMBERS]
+The full agent loop is one ConfigMap script and one pod spec; the manifest is [here](TODO-repo-link). On the default demo, the generated code self-checks its own isolation and prints, after running to completion in the network-isolated pod:
+
+```
+kernel: 6.18.54
+interfaces: dummy0 lo
+wget: bad address 'aws.amazon.com'
+NETWORK: blocked — isolation works
+SA token: absent — expected
+uid: 0
+```
+
+All three implementation hypotheses from this section held in practice: the ConfigMap mounts inside the sandbox VM, kubelet exec and log access work with no network device, and the service-account token is absent with `automountServiceAccountToken: false`.
 
 ## What isolation costs
 
@@ -128,9 +139,12 @@ Method: for cold start, N pods of each runtime, time from `kubectl apply` to Rea
 
 | Metric | runc | Nitro Sandbox | gVisor |
 |---|---|---|---|
-| Cold start, p50 / p90 (warm node) | [NUMBER] | [NUMBER] | [NUMBER] |
-| Density: 1-vCPU pods per m8i.xlarge | [NUMBER] | [NUMBER] | [NUMBER] |
-| Cost per pod-hour at that density | [NUMBER] | [NUMBER] | [NUMBER] |
+| Cold start on a warm node, per pod | 1-5 s (9 runs) | 3-4 s best, 37 s p90 | n/a (censored, see below) |
+| Density: 1-vCPU pods per m8i.xlarge | 3-4 | 15 Ready out of a 20-slot cap | 2 |
+| Node cost per pod-hour | ~$0.07 | ~$0.02 | ~$0.12 |
+| Cold start including node bootstrap | 215 s wall for 10 pods (4 new nodes) | same window + sandbox boot | n/a |
+
+The gVisor cold-start number was censored in this session: both datapoints hit the same scheduling window, so treat that cell as future work rather than a result. Density was measured with a 250m vCPU *request* and a 1-vCPU *limit*: the scheduler packs by requests, so at a full 1-vCPU request the sandbox slot budget never gets to bind (observed live: 1 pod per busy node with three smoke pods already requesting the vCPUs).
 
 Two expectations to check against your own run:
 
@@ -141,7 +155,7 @@ Two expectations to check against your own run:
 
 The first benchmark run taught us more than the CLI output shows. A pod's time-to-Ready decomposes into two independent pieces, and they measure different risks.
 
-**Sandbox startup on a node with free capacity.** A warm node with free sandbox slots brings a pod to Ready in [4-37] s (runc: 1-5 s). This is the honest cost of the isolation itself: image pull, VM boot, guest kernel init.
+**Sandbox startup on a node with free capacity.** A warm node with free sandbox slots brings a pod to Ready in 3-37 s (runc: 1-5 s). This is the honest cost of the isolation itself: image pull, VM boot, guest kernel init.
 
 **Node provisioning.** A pod that does not fit lands in the scheduler's bin-packing decision; when it nominates a new nodeclaim, EC2 has to launch a node first, and that is 1-3 minutes of AMI boot plus kubelet join before any of your pods moves. In our runs, a first wave measured 215 s wall time where the second, warm run of the same spec measured 5 s. The difference is node bootstrap, not the sandbox.
 
