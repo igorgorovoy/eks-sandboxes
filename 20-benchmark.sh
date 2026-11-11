@@ -145,22 +145,29 @@ density_once() {
   gen_manifest "$rt" "$max" | kubectl apply -n "$ns" -f - >/dev/null
   t0=$(date +%s)
 
+  # Plateau verdict requires BOTH: >= PLATEAU_MIN seconds elapsed AND Ready unchanged
+  # for PLATEAU_POLLS consecutive polls. Instant plateaus are scheduling artifacts
+  # (node provisioning takes minutes), not real density limits.
+  PLATEAU_MIN="${PLATEAU_MIN:-240}"
+  PLATEAU_POLLS="${PLATEAU_POLLS:-12}"
+
   while :; do
     json=$(kubectl get pods -n "$ns" -o json)
     read -r total ready <<<"$(pod_counters <<<"$json")"
     if [ "$ready" = "$prev" ]; then
-      stable=$((stable + 1))   # Ready stops growing 3 checks in a row => plateau, deliver the verdict
+      stable=$((stable + 1))
     else
       stable=0; prev=$ready
     fi
-    if [ "$stable" -ge 3 ] || [ $(( $(date +%s) - t0 )) -ge "$TIMEOUT" ]; then
+    elapsed=$(( $(date +%s) - t0 ))
+    if [ "$elapsed" -ge "$PLATEAU_MIN" ] && [ "$stable" -ge "$PLATEAU_POLLS" ]; then
       break
     fi
+    if [ "$elapsed" -ge "$TIMEOUT" ]; then break; fi
     sleep "$POLL_INTERVAL"
   done
 
-  nodes=$(jq -r '.items[] | select(any(.status.conditions[]?; .type=="Ready" and .status=="True")) | .spec.nodeName' <<<"$json" | sort | uniq -c | sort -rn)
-  echo "[$rt] density: ready=$ready/$total; per node:"
+  nodes=
   echo "$nodes"
   echo "$nodes" | awk -v rt="$rt" '{printf "density,%s,%s,%s\n", rt, $2, $1}' >>"$CSV"
   printf 'density,%s,TOTAL_READY,%s\n' "$rt" "$ready" >>"$CSV"
