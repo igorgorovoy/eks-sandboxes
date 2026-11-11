@@ -42,7 +42,7 @@ spec:
 
 Решта пода лишається нативною: Pod Identity, VPC CNI, EBS/EFS/S3, CloudWatch працюють як звично.
 
-Мій кластер ([весь Terraform тут](TODO-лінк-на-репо)), один Auto Mode кластер з NodePool, прибитим до `m8i.xlarge`, плюс gVisor на managed node group того ж типу інстансу:
+Мій кластер ([весь Terraform тут](the [full Terraform in the repo](https://github.com/igorgorovoy/eks-sandboxes))), один Auto Mode кластер з NodePool, прибитим до `m8i.xlarge`, плюс gVisor на managed node group того ж типу інстансу:
 
 ```yaml
 # Auto Mode NodePool для Nitro Sandbox-подів
@@ -117,7 +117,7 @@ sequenceDiagram
 
 **code-exec-под не монтує SA взагалі.** Став `automountServiceAccountToken: false`. Тоді згенерований код не має права дзвонити в Kubernetes API, створювати поди, читати секрети, навіть без мережі. RBAC навколо агента обмежений його namespace: створювати і видаляти поди та ConfigMaps у своєму namespace, читати логи подів, і нічого більше.
 
-Повний цикл агента поміщається в один скрипт у ConfigMap і один pod spec; маніфест [тут](TODO-лінк-на-репо). У демо згенерований код перевіряє власну ізоляцію. Він виконався до кінця в network-isolated поді і надрукував:
+Повний цикл агента поміщається в один скрипт у ConfigMap і один pod spec; маніфест [тут](the [full Terraform in the repo](https://github.com/igorgorovoy/eks-sandboxes)). У демо згенерований код перевіряє власну ізоляцію. Він виконався до кінця в network-isolated поді і надрукував:
 
 ```
 kernel: 6.18.54
