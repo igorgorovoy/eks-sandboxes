@@ -1,6 +1,6 @@
 # Hardware-isolated AI agents on EKS with Nitro Sandboxes: a hands-on guide, with a gVisor comparison
 
-*Author: Igor Gorovyy, DevOps Engineer Lead & Senior Solutions Architect, AWS Community Builder*
+*Author: [Igor Gorovyy](https://www.linkedin.com/in/gorovyyigor/), DevOps Engineer Lead & Senior Solutions Architect, AWS Community Builder*
 
 You let an AI agent write code. That code came out of a model that reads the internet, and you cannot trust it. So the execution environment needs a real isolation boundary. On November 9, 2026, AWS shipped a new one: [Nitro Sandboxes](TODO-announcement-link), lightweight VMs managed by the Nitro Hypervisor. They work for EKS pods, ECS tasks and standalone EC2 VMs, at no extra charge.
 
