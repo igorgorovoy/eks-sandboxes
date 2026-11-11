@@ -196,14 +196,17 @@ All Terraform, manifests, the agent pod setup and the benchmark script are in [T
 - [gVisor documentation](https://gvisor.dev/docs/)
 
 <!--
-PRE-SUBMIT TODO (from PLAN.md, experiment day):
-[ ] run smoke tests, fill in kernel evidence
-[ ] verify custom NodePool scheduling hypothesis (or drop that paragraph)
-[ ] run coldstart twice per runtime, fill p50/p90
-[ ] run density, fill the table and compare against the documented caps (5x vCPU allocation + 5x sandbox count, halved on CPU-overcommit types; 256 MiB overhead per pod; SMT core-scheduling effect on m8i)
-[ ] run E2E agent demo, fill results
-- verified against official docs Nov 10 2026: Graviton support, attestation KMS PCR caveat, no-GPU passthrough, no resize/snapshot/live-migration, K8s >= 1.36, no extra charge, exec/logs over vsock
-[ ] pin gVisor release in gvisor.mime and cite versions
-[ ] confirm Auto Mode fee figure from billing/pricing docs
-[ ] close or clearly flag the two security gaps before publishing manifests publicly
+PRE-SUBMIT STATUS (updated Nov 11, after experiment day):
+[x] smoke tests run, kernel evidence in evidence/runtime-evidence.txt
+[x] custom NodePool hypothesis confirmed (nodeclaims on sandbox-nitro)
+[x] coldstart warm numbers: runc 1-5 s, nitro 3-37 s, nitro-net 3-38 s (censored runs documented)
+[x] density: runc 3-4/node, gVisor 2/node, nitro 15/node (20-slot docs cap) - memory-bound before slots
+[x] E2E agent demo ran live, output quoted in the text
+[x] Graviton, attestation KMS PCR, GPU/resize/snapshot claims verified against official docs
+[x] gVisor release pinned 20261102.0 (bundle format, gvisor-bin sidecars)
+[ ] fill the Auto Mode fee figure from billing before the cost sentence ships
+[ ] repo-link TODO: make repo public (or replace with inline snippets)
+[ ] announcement link TODO: paste the What s New URL
+--
 -->
+
