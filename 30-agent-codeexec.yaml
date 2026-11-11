@@ -142,6 +142,9 @@ metadata:
   namespace: agent-demo
 spec:
   serviceAccountName: agent
+  # Single-shot demo loop: without this the container exits 0 and kubelet
+  # restarts it forever (observed live: RESTARTS 2 + repeated runs).
+  restartPolicy: Never
   runtimeClassName: isolated-sandbox
   nodeSelector: { sandbox-runtime: nitro }
   tolerations:

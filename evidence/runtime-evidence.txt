@@ -19,6 +19,16 @@ i-0d40c18cee9a9e19d                            Ready    <none>   4h11m   v1.36.4
 ip-172-31-100-82.eu-west-1.compute.internal    Ready    <none>   4h24m   v1.36.5-eks-8418f54   172.31.100.82    <none>        Amazon Linux 2023.12.20261102                                          6.1
 ip-172-31-101-126.eu-west-1.compute.internal   Ready    <none>   57m     v1.36.5-eks-8418f54   172.31.101.126   <none>        Amazon Linux 2023.12.20261102                                          6.1
 
+# E2E agent demo (30-agent-codeexec.yaml, demo mode):
+# agent (isolated-sandbox, network on) -> ConfigMap (binaryData base64) -> codeexec pod
+# (network-isolated) -> pod logs via API -> agent cleanup. Output of the generated code:
+# kernel: 6.18.54
+# interfaces: dummy0 lo
+# wget: bad address 'aws.amazon.com'
+# NETWORK: blocked — isolation works
+# SA token: absent — expected
+# uid: 0
+
 # nodepool sandbox-nitro slots on node:
                     eks.amazonaws.com/nitro-sandbox=true
   eks.amazonaws.com/nitro-sandbox:  20
