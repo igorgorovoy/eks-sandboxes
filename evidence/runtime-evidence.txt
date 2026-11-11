@@ -1,0 +1,26 @@
+# smoke: kernels per runtime
+--- runc-baseline
+runtime=runc kernel=6.18.56
+--- nitro-isolated
+runtime=nitro kernel=6.18.54 cpus=1
+--- nitro-codeexec
+runtime=nitro-network-isolated kernel=6.18.54
+interfaces: dummy0 lo 
+wget: bad address 'aws.amazon.com'
+NETWORK: blocked (expected)
+--- gvisor
+runtime=gvisor kernel=4.19.0-gvisor
+[   0.000000] Starting gVisor...
+[   0.493829] Forking spaghetti code...
+
+# nodes: OS / containerd / kernel
+i-0c351f031fee603cf                            Ready    <none>   4h23m   v1.36.4-eks-cfb47f5   172.31.101.100   <none>        Bottlerocket (EKS Auto, Standard) 2026.10.31 (aws-k8s-1.36-standard)   6.1
+i-0d40c18cee9a9e19d                            Ready    <none>   4h11m   v1.36.4-eks-cfb47f5   172.31.101.31    <none>        Bottlerocket (EKS Auto, Standard) 2026.10.31 (aws-k8s-1.36-standard)   6.1
+ip-172-31-100-82.eu-west-1.compute.internal    Ready    <none>   4h24m   v1.36.5-eks-8418f54   172.31.100.82    <none>        Amazon Linux 2023.12.20261102                                          6.1
+ip-172-31-101-126.eu-west-1.compute.internal   Ready    <none>   57m     v1.36.5-eks-8418f54   172.31.101.126   <none>        Amazon Linux 2023.12.20261102                                          6.1
+
+# nodepool sandbox-nitro slots on node:
+                    eks.amazonaws.com/nitro-sandbox=true
+  eks.amazonaws.com/nitro-sandbox:  20
+  eks.amazonaws.com/nitro-sandbox:  20
+  eks.amazonaws.com/nitro-sandbox  2             0
