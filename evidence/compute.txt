@@ -1,0 +1,25 @@
+# nodepools (Auto Mode)
+NAME              NODECLASS   NODES   READY   AGE   WEIGHT   CPU   MEMORY
+general-purpose   default     0       True    58m            0     0
+sandbox-nitro     default     5       True    43m            20    80442716Ki
+system            default     1       True    58m            2     3897428Ki
+
+# nodeclaims
+NAME                  TYPE         CAPACITY    ZONE         NODE                  READY   AGE
+sandbox-nitro-28nhg   m8i.xlarge   on-demand   eu-west-1b   i-096d286e3c0616467   True    38m
+sandbox-nitro-6bs77   m8i.xlarge   on-demand   eu-west-1b   i-0d40c18cee9a9e19d   True    42m
+sandbox-nitro-wwjgd   m8i.xlarge   on-demand   eu-west-1a   i-0f53cef2b9a08e460   True    35m
+sandbox-nitro-z5s84   m8i.xlarge   on-demand   eu-west-1b   i-062eb0fb449499e14   True    43m
+sandbox-nitro-zxdkf   m8i.xlarge   on-demand   eu-west-1a   i-02ad1b4abceb29432   True    32m
+system-kr2tv          c6g.large    on-demand   eu-west-1b   i-0c351f031fee603cf   True    54m
+
+# nodes
+NAME                                           STATUS   ROLES    AGE   VERSION               INTERNAL-IP      EXTERNAL-IP   OS-IMAGE                                                               KERNEL-VERSION                            CONTAINER-RUNTIME
+i-02ad1b4abceb29432                            Ready    <none>   31m   v1.36.4-eks-cfb47f5   172.31.100.123   <none>        Bottlerocket (EKS Auto, Standard) 2026.10.31 (aws-k8s-1.36-standard)   6.18.56 (amd64)                           containerd://2.2.9+bottlerocket
+i-062eb0fb449499e14                            Ready    <none>   43m   v1.36.4-eks-cfb47f5   172.31.101.54    <none>        Bottlerocket (EKS Auto, Standard) 2026.10.31 (aws-k8s-1.36-standard)   6.18.56 (amd64)                           containerd://2.2.9+bottlerocket
+i-096d286e3c0616467                            Ready    <none>   38m   v1.36.4-eks-cfb47f5   172.31.101.27    <none>        Bottlerocket (EKS Auto, Standard) 2026.10.31 (aws-k8s-1.36-standard)   6.18.56 (amd64)                           containerd://2.2.9+bottlerocket
+i-0c351f031fee603cf                            Ready    <none>   54m   v1.36.4-eks-cfb47f5   172.31.101.100   <none>        Bottlerocket (EKS Auto, Standard) 2026.10.31 (aws-k8s-1.36-standard)   6.18.56 (arm64)                           containerd://2.2.9+bottlerocket
+i-0d40c18cee9a9e19d                            Ready    <none>   42m   v1.36.4-eks-cfb47f5   172.31.101.31    <none>        Bottlerocket (EKS Auto, Standard) 2026.10.31 (aws-k8s-1.36-standard)   6.18.56 (amd64)                           containerd://2.2.9+bottlerocket
+i-0f53cef2b9a08e460                            Ready    <none>   35m   v1.36.4-eks-cfb47f5   172.31.100.134   <none>        Bottlerocket (EKS Auto, Standard) 2026.10.31 (aws-k8s-1.36-standard)   6.18.56 (amd64)                           containerd://2.2.9+bottlerocket
+ip-172-31-100-154.eu-west-1.compute.internal   Ready    <none>   41m   v1.36.5-eks-8418f54   172.31.100.154   <none>        Amazon Linux 2023.12.20261102                                          6.18.56-125.164.amzn2023.x86_64 (amd64)   containerd://2.3.7+unknown
+ip-172-31-100-82.eu-west-1.compute.internal    Ready    <none>   55m   v1.36.5-eks-8418f54   172.31.100.82    <none>        Amazon Linux 2023.12.20261102                                          6.18.56-125.164.amzn2023.x86_64 (amd64)   containerd://2.3.7+unknown

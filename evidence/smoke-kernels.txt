@@ -1,0 +1,11 @@
+# smoke: kernels per runtime
+--- runc-baseline
+runtime=runc kernel=6.18.56
+--- nitro-isolated
+runtime=nitro kernel=6.18.54 cpus=1
+--- nitro-codeexec
+runtime=nitro-network-isolated kernel=6.18.54
+interfaces: dummy0 lo 
+NETWORK: blocked (expected)
+wget: bad address 'aws.amazon.com'
+--- gvisor
