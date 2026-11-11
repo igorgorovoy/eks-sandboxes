@@ -213,7 +213,7 @@ Cold start з бутстрапом ноди (перший прогін), runc, p
 - [Setup paths on EKS](https://docs.aws.amazon.com/eks/latest/userguide/sandboxing-isolated-setup.html): Auto Mode проти node groups, K8s >= 1.36
 - [Amazon EC2 Nitro Sandboxes](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/amazon-ec2-nitro-sandboxes.html): підтримка інстансів (Intel/AMD/Graviton), вибір примітива
 - [gVisor documentation](https://gvisor.dev/docs/)
-- [Репо з усіма файлами з гайду](https://github.com/igorgorovoy/eks-sandboxes) (приватне до сабміту)
+- [Репо з усіма файлами з гайду](https://github.com/igorgorovoy/eks-sandboxes)
 
 <!--
 СТАТУС ПЕРЕД САБМІТОМ (оновлено 11 листопада, після дня експериментів):
@@ -225,6 +225,6 @@ Cold start з бутстрапом ноди (перший прогін), runc, p
 [x] твердження по Graviton, атестації KMS PCR, GPU/resize/snapshot звірені з офіційними доками
 [x] gVisor-реліз зафіксований: 20261102.0 (формат бандла, sidecar'и gvisor-bin)
 [ ] підставити лінк на анонс
-[ ] вирішити: репо публічне або інлайн-сніпети
+[x] репо публічне: github.com/igorgorovoy/eks-sandboxes
 [ ] цифру Auto Mode fee звірити з білінгом перед сабмітом
 -->

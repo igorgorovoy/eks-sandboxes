@@ -206,7 +206,7 @@ A negative number in the CSV means the pod was never Ready inside the measuremen
 - [Setup paths on EKS](https://docs.aws.amazon.com/eks/latest/userguide/sandboxing-isolated-setup.html): Auto Mode vs node groups, K8s >= 1.36
 - [Amazon EC2 Nitro Sandboxes](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/amazon-ec2-nitro-sandboxes.html): instance support (Intel/AMD/Graviton), when to use what
 - [gVisor documentation](https://gvisor.dev/docs/)
-- [The repo with all files from this guide](https://github.com/igorgorovoy/eks-sandboxes) (private until submit)
+- [The repo with all files from this guide](https://github.com/igorgorovoy/eks-sandboxes) - try it
 
 <!--
 PRE-SUBMIT STATUS (updated Nov 11, after experiment day):
@@ -218,6 +218,6 @@ PRE-SUBMIT STATUS (updated Nov 11, after experiment day):
 [x] Graviton, attestation KMS PCR, GPU/resize/snapshot claims verified against official docs
 [x] gVisor release pinned 20261102.0 (bundle format, gvisor-bin sidecars)
 [ ] fill the Auto Mode fee figure from billing before the cost sentence ships
-[ ] repo-link TODO: make repo public (or replace with inline snippets)
+[x] repo is public: github.com/igorgorovoy/eks-sandboxes
 [ ] announcement link TODO: paste the What's New URL
 -->
