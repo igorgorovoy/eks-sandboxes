@@ -138,7 +138,7 @@ Method. For cold start: N pods of each runtime, time from `kubectl apply` to Rea
 What to expect in your own run:
 
 - Density. The docs are explicit here. Two caps apply per node, both sized at 5 times the node's vCPU count: the total vCPUs allocated across all sandboxes, and the number of sandboxes (the count cap is halved on CPU-overcommit instance types). A 4-vCPU `m8i.xlarge` therefore fits up to 20 single-vCPU sandboxes. Each sandbox pod also carries a fixed memory overhead the scheduler adds on top of the pod request: 256 MiB for `isolated-sandbox`, 512 MiB for `confidential-sandbox`. And on SMT instance types (all Intel, most AMD), core scheduling keeps two different sandboxes off the sibling threads of one core, so compute available to sandboxed pods is roughly half the advertised vCPUs; Graviton, one thread per core, is unaffected. In my run memory bit first: 15 pods of 512 Mi + 256 Mi overhead fit into 14.4 GiB allocatable, and 5 of 20 stayed Pending. gVisor has none of these caps, so the crossover is where density beats boundary strength.
-- Cost. Auto Mode charges a management fee on top of EC2 that managed node groups do not have. Count it as a separate row for an honest per-pod-hour (my number does not have it yet; I will confirm it from billing before submitting). NAT for the private subnets is about $0.045 per hour, and it bills whether or not your cluster has traffic, so tear the demo down after the run.
+- Cost. Auto Mode adds a management fee on top of EC2 that managed node groups do not have: \/bin/zsh.02831 per hour for an m8i.xlarge node in eu-west-1 (checked against the public price list; ~12% of the EC2 rate). With it included, the packed-node numbers in the table stay the same rounding. NAT for the private subnets is about $0.045 per hour, and it bills whether or not your cluster has traffic, so tear the demo down after the run.
 
 ## Cold start is two numbers, not one
 
@@ -217,7 +217,7 @@ PRE-SUBMIT STATUS (updated Nov 11, after experiment day):
 [x] E2E agent demo ran live, output quoted in the text
 [x] Graviton, attestation KMS PCR, GPU/resize/snapshot claims verified against official docs
 [x] gVisor release pinned 20261102.0 (bundle format, gvisor-bin sidecars)
-[ ] fill the Auto Mode fee figure from billing before the cost sentence ships
+[x] Auto Mode fee confirmed from the public price list: \/bin/zsh.02831/hour per m8i.xlarge (eu-west-1)
 [x] repo is public: github.com/igorgorovoy/eks-sandboxes
 [ ] announcement link TODO: paste the What's New URL
 -->
