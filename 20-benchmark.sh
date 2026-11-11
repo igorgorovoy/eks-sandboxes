@@ -67,8 +67,11 @@ emit_pod() {
   printf '    - name: main\n      image: %s\n' "$IMAGE"
   printf '      command: ["sh", "-c", "sleep infinity"]\n'
   printf '      resources:\n'
-  printf '        requests: { cpu: "%s", memory: %s }\n' "$CPU" "$MEM"
-  printf '        limits:   { cpu: "%s", memory: %s }\n' "$CPU" "$MEM"
+  # CPU request is what the scheduler packs on (default 250m — the sandbox slot
+  # budget allows oversubscribing to 20 sandboxes per 4-vCPU node); CPU limit
+  # stays 1 vCPU so every runtime gets the same wall-clock compute.
+  printf '        requests: { cpu: "%s", memory: %s }\n' "${CPU_REQUEST:-$CPU}" "$MEM"
+  printf '        limits:   { cpu: "%s", memory: %s }\n' "${CPU_LIMIT:-$CPU}" "$MEM"
   printf -- '---\n'
 }
 
