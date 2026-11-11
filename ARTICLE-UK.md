@@ -175,7 +175,7 @@ uid: 0
 
 Патерн вище достатньо малий, щоб тягнувся однією людиною, і достатньо строгий, щоб пережити security-рев'ю. Після двох admission-прогалин з розділу вище.
 
-Весь Terraform, маніфести, налаштування пода агента і скрипт бенчмарку лежать у [TODO: публічне посилання на репо до сабміту]. Числа в таблицях з прогонів, записаних у `benchmark-results.csv`.
+Весь Terraform, маніфести, налаштування пода агента і скрипт бенчмарку лежать у [github.com/igorgovoy/eks-sandboxes](https://github.com/igorgorovoy/eks-sandboxes). Числа в таблицях з прогонів, записаних у `benchmark-results.csv`.
 
 ## Джерела
 
@@ -186,6 +186,7 @@ uid: 0
 - [Setup paths on EKS](https://docs.aws.amazon.com/eks/latest/userguide/sandboxing-isolated-setup.html): Auto Mode проти node groups, K8s >= 1.36
 - [Amazon EC2 Nitro Sandboxes](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/amazon-ec2-nitro-sandboxes.html): підтримка інстансів (Intel/AMD/Graviton), вибір примітива
 - [gVisor documentation](https://gvisor.dev/docs/)
+- [Репо з усіма файлами з гайду](https://github.com/igorgorovoy/eks-sandboxes) (приватне до сабміту)
 
 <!--
 СТАТУС ПЕРЕД САБМІТОМ (оновлено 11 листопада, після дня експериментів):

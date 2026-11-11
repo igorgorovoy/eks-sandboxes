@@ -34,7 +34,7 @@ spec:
 
 Everything else in the pod stays native: Pod Identity, VPC CNI, EBS/EFS/S3 volumes, CloudWatch all work as usual.
 
-My cluster ([full Terraform here](TODO-repo-link-or-private-repo-note)), one Auto Mode cluster with a NodePool pinned to `m8i.xlarge`, plus gVisor on a managed node group using the same instance type:
+My cluster ([full Terraform here](the full Terraform lives in [the repo](https://github.com/igorgorovoy/eks-sandboxes))), one Auto Mode cluster with a NodePool pinned to `m8i.xlarge`, plus gVisor on a managed node group using the same instance type:
 
 ```yaml
 # Auto Mode NodePool for Nitro Sandbox pods
@@ -109,7 +109,7 @@ Three implementation spots where I spent the most time:
 
 **The code-exec pod mounts no service account at all.** Set `automountServiceAccountToken: false` on it. Then the generated code cannot call the Kubernetes API, create pods, or read secrets, even though it already has no network. The RBAC around the agent is namespace-scoped: create and delete pods and ConfigMaps in its own namespace, get pod logs, nothing else.
 
-The full agent loop fits into one ConfigMap script and one pod spec; the manifest is [here](TODO-repo-link). In the demo, the generated code checks its own isolation. It ran to completion in the network-isolated pod and printed:
+The full agent loop fits into one ConfigMap script and one pod spec; the manifest lives [here](https://github.com/igorgorovoy/eks-sandboxes/blob/main/30-agent-codeexec.yaml). In the demo, the generated code checks its own isolation. It ran to completion in the network-isolated pod and printed:
 
 ```
 kernel: 6.18.54
@@ -168,7 +168,7 @@ For agents that execute model-written code on EKS today:
 
 The pattern above is small enough for one person to own, and strict enough to survive a security review. After the two admission gaps from the last section are closed.
 
-All Terraform, manifests, the agent pod setup and the benchmark script are in [TODO: public repo link by submit time]. The numbers in the tables come from the runs recorded in `benchmark-results.csv`.
+All Terraform, manifests, the agent pod setup and the benchmark script are in [github.com/igorgorovoy/eks-sandboxes](https://github.com/igorgorovoy/eks-sandboxes). The numbers in the tables come from the runs recorded in `benchmark-results.csv`.
 
 ## Sources
 
@@ -179,6 +179,7 @@ All Terraform, manifests, the agent pod setup and the benchmark script are in [T
 - [Setup paths on EKS](https://docs.aws.amazon.com/eks/latest/userguide/sandboxing-isolated-setup.html): Auto Mode vs node groups, K8s >= 1.36
 - [Amazon EC2 Nitro Sandboxes](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/amazon-ec2-nitro-sandboxes.html): instance support (Intel/AMD/Graviton), when to use what
 - [gVisor documentation](https://gvisor.dev/docs/)
+- [The repo with all files from this guide](https://github.com/igorgorovoy/eks-sandboxes) (private until submit)
 
 <!--
 PRE-SUBMIT STATUS (updated Nov 11, after experiment day):
