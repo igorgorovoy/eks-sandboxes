@@ -27,7 +27,7 @@ IMAGE="public.ecr.aws/docker/library/busybox:1.36"
 CPU="${CPU:-1}"
 MEM="${MEM:-512Mi}"
 CSV="${CSV:-benchmark-results.csv}"
-TIMEOUT="${TIMEOUT:-900}"
+TIMEOUT="${TIMEOUT:-1800}"
 POLL_INTERVAL="${POLL_INTERVAL:-2}"
 
 for bin in kubectl jq; do
@@ -118,7 +118,7 @@ coldstart_once() {
     .items[] |
     [ .metadata.name,
       (.metadata.creationTimestamp | ts),
-      ([.status.conditions[]? | select(.type == \"Ready\")]
+      ([.status.conditions[]? | select(.type == \"Ready\" and .status == \"True\")]
         | (.[0].lastTransitionTime // null)
         | if . == null then -1 else ts end)
     ] | @tsv" <<<"$json" | while IFS=$'\t' read -r name created readyt; do

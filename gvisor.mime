@@ -2,6 +2,23 @@ MIME-Version: 1.0
 Content-Type: multipart/mixed; boundary="BOUNDARY"
 
 --BOUNDARY
+Content-Type: application/node.eks.aws
+
+---
+apiVersion: node.eks.aws/v1alpha1
+kind: NodeConfig
+spec:
+  containerd:
+    # The AL2023 EKS AMI ships containerd 2.x with NO runsc runtime entry by default
+    # (verified: a node without this NodeConfig fails with "no runtime for runsc is
+    # configured"). nodeadm normalizes the 1.7-style key into the v2 config path, so
+    # the old-style section below works on both. Alternative v2 syntax, if ever needed:
+    #   [plugins.'io.containerd.cri.v1.runtime'.containerd.runtimes.runsc]
+    config: |
+      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runsc]
+        runtime_type = "io.containerd.runsc.v1"
+
+--BOUNDARY
 Content-Type: text/x-shellscript; charset="us-ascii"
 
 #!/bin/bash
@@ -11,10 +28,6 @@ set -euo pipefail
 # bundle (gvisor.tar.zstd) instead of standalone binaries; the old
 # "release/latest/x86_64/runsc" URL returns 404 (verified Nov 11, 2026).
 GVISOR_RELEASE="20261102.0"
-
-# NodeConfig is not needed: the AL2023 EKS AMI's containerd config (2.x) already
-# contains the runsc runtime entry under
-# [plugins.'io.containerd.cri.v1.runtime'.containerd.runtimes.runsc] (verified on node).
 
 ARCH="$(uname -m)"
 URL="https://storage.googleapis.com/gvisor/releases/release/${GVISOR_RELEASE}/${ARCH}"
