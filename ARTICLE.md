@@ -137,7 +137,21 @@ Two expectations to check against your own run:
 - Density. The docs are explicit here, and the numbers are higher than they look. Two caps apply per node, both sized at 5 times the node's vCPU count: the total vCPUs allocated across all sandboxes, and the number of sandboxes (the count cap is halved on CPU-overcommit instance types). A 4-vCPU `m8i.xlarge` therefore fits up to 20 single-vCPU sandboxes. Each sandbox pod also carries a fixed memory overhead the scheduler adds on top of the pod request: 256 MiB for `isolated-sandbox`, 512 MiB for `confidential-sandbox`. And on SMT instance types (all Intel, most AMD), core scheduling keeps two different sandboxes off the sibling threads of one core, so compute available to sandboxed pods is roughly half the advertised vCPUs; Graviton, one thread per core, is unaffected. That last detail changes the density math on `m8i` and is worth measuring directly. gVisor has none of these caps, so the crossover is where density beats start time.
 - Cost. Auto Mode charges a management fee on top of EC2 that managed node groups do not have. For an honest per-pod-hour comparison, include it as a separate row. NAT for the private subnets is about $0.045 per hour, and it bills whether or not your cluster has traffic, so tear the demo down after the run.
 
+## Cold start is two numbers, not one
+
+The first benchmark run taught us more than the CLI output shows. A pod's time-to-Ready decomposes into two independent pieces, and they measure different risks.
+
+**Sandbox startup on a node with free capacity.** A warm node with free sandbox slots brings a pod to Ready in [4-37] s (runc: 1-5 s). This is the honest cost of the isolation itself: image pull, VM boot, guest kernel init.
+
+**Node provisioning.** A pod that does not fit lands in the scheduler's bin-packing decision; when it nominates a new nodeclaim, EC2 has to launch a node first, and that is 1-3 minutes of AMI boot plus kubelet join before any of your pods moves. In our runs, a first wave measured 215 s wall time where the second, warm run of the same spec measured 5 s. The difference is node bootstrap, not the sandbox.
+
+And it can go much worse for a reason unrelated to sandboxes: our account hit **VcpuLimitExceeded** on the on-demand instance family (the default limit is 32 vCPUs per family for a fresh account). Seven m8i.xlarge nodes at 4 vCPUs each plus the system node filled the bucket, and every new nodeclaim retried with `InsufficientCapacityError` while pods sat in Pending for about half an hour until we freed capacity. Note for your own run: before density experiments, either raise the family vCPU limit or delete the nodeclaims you no longer need.
+
+A practical consequence for benchmark methodology: measure the sandbox cost on warm nodes, and if you want to report "from nothing to running", measure that as a separate cold path that includes node bootstrap. Do not blend the two; they scale differently and break differently.
+
 ## Where it does not fit
+
+
 
 - **No GPU passthrough yet.** Local inference inside a Nitro Sandbox is not possible today. If your agents need a local model, the sandbox runs it over the network or you stay on gVisor, which inherits host GPUs through runc-compatible devices.
 - **No resize, no snapshot.** CPU and memory are allocated at pod boot: in-place resize is not supported, they stay unless you delete and recreate the pod with new requests. The primitive today also has no snapshot and restore and no live migration, so idle agents keep paying for their resources.
