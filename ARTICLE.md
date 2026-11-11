@@ -2,7 +2,7 @@
 
 *Author: [Igor Gorovyy](https://www.linkedin.com/in/gorovyyigor/), DevOps Engineer Lead & Senior Solutions Architect, AWS Community Builder*
 
-You let an AI agent write code. That code came out of a model that reads the internet, and you cannot trust it. So the execution environment needs a real isolation boundary. On November 9, 2026, AWS shipped a new one: [Nitro Sandboxes](TODO-announcement-link), lightweight VMs managed by the Nitro Hypervisor. They work for EKS pods, ECS tasks and standalone EC2 VMs, at no extra charge.
+You let an AI agent write code. That code came out of a model that reads the internet, and you cannot trust it. So the execution environment needs a real isolation boundary. On November 9, 2026, AWS shipped a new one: [Nitro Sandboxes](https://aws.amazon.com/about-aws/whats-new/2026/11/nitro-sandboxes-eks-ecs-ec2/), lightweight VMs managed by the Nitro Hypervisor. They work for EKS pods, ECS tasks and standalone EC2 VMs, at no extra charge.
 
 Here is how it worked in my practice: a cluster where Nitro Sandboxes, gVisor and plain runc run side by side on identical instances, the "agent runs code in an isolated pod" pattern wired end to end, and measurements of what the isolation costs in start time and density.
 
@@ -219,5 +219,5 @@ PRE-SUBMIT STATUS (updated Nov 11, after experiment day):
 [x] gVisor release pinned 20261102.0 (bundle format, gvisor-bin sidecars)
 [x] Auto Mode fee confirmed from the public price list: \/bin/zsh.02831/hour per m8i.xlarge (eu-west-1)
 [x] repo is public: github.com/igorgorovoy/eks-sandboxes
-[ ] announcement link TODO: paste the What's New URL
+[x] announcement link inserted (aws.amazon.com/about-aws/whats-new/2026/11/nitro-sandboxes-eks-ecs-ec2/)
 -->
