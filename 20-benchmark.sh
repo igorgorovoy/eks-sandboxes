@@ -167,8 +167,8 @@ density_once() {
     sleep "$POLL_INTERVAL"
   done
 
-  nodes=
-  echo "$nodes"
+  nodes=$(jq -r '.items[] | select(any(.status.conditions[]?; .type=="Ready" and .status=="True")) | .spec.nodeName' <<<"$json" | sort | uniq -c | sort -rn)
+  echo "[$rt] density: ready=$ready/$total; per node:"
   echo "$nodes" | awk -v rt="$rt" '{printf "density,%s,%s,%s\n", rt, $2, $1}' >>"$CSV"
   printf 'density,%s,TOTAL_READY,%s\n' "$rt" "$ready" >>"$CSV"
   printf 'density,%s,PENDING,%s\n'     "$rt" "$((total - ready))" >>"$CSV"
