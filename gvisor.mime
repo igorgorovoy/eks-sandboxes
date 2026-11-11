@@ -2,38 +2,35 @@ MIME-Version: 1.0
 Content-Type: multipart/mixed; boundary="BOUNDARY"
 
 --BOUNDARY
-Content-Type: application/node.eks.aws
-
----
-apiVersion: node.eks.aws/v1alpha1
-kind: NodeConfig
-spec:
-  containerd:
-    # WARNING: syntax for containerd 1.7 (config v2).
-    # If the node runs containerd 2.x (check: containerd --version),
-    # replace the section with:
-    #   [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runsc]
-    config: |
-      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runsc]
-        runtime_type = "io.containerd.runsc.v1"
-
---BOUNDARY
 Content-Type: text/x-shellscript; charset="us-ascii"
 
 #!/bin/bash
 set -euo pipefail
-# Pin a concrete release instead of "latest" for a reproducible benchmark
-GVISOR_RELEASE="latest"
+
+# Pinned release for a reproducible benchmark. Latest gVisor releases ship a
+# bundle (gvisor.tar.zstd) instead of standalone binaries; the old
+# "release/latest/x86_64/runsc" URL returns 404 (verified Nov 11, 2026).
+GVISOR_RELEASE="20261102.0"
+
+# NodeConfig is not needed: the AL2023 EKS AMI's containerd config (2.x) already
+# contains the runsc runtime entry under
+# [plugins.'io.containerd.cri.v1.runtime'.containerd.runtimes.runsc] (verified on node).
+
 ARCH="$(uname -m)"
 URL="https://storage.googleapis.com/gvisor/releases/release/${GVISOR_RELEASE}/${ARCH}"
 
+command -v zstd >/dev/null || dnf install -y zstd
+
 cd /tmp
-curl -fsSLO "${URL}/runsc"
-curl -fsSLO "${URL}/runsc.sha512"
-curl -fsSLO "${URL}/containerd-shim-runsc-v1"
-curl -fsSLO "${URL}/containerd-shim-runsc-v1.sha512"
-sha512sum -c runsc.sha512 -c containerd-shim-runsc-v1.sha512
+curl -fsSLO "${URL}/gvisor.tar.zstd"
+curl -fsSLO "${URL}/gvisor.tar.zstd.sha512"
+sha512sum -c gvisor.tar.zstd.sha512
+
+tar --zstd -xf gvisor.tar.zstd
 chmod a+rx runsc containerd-shim-runsc-v1
 mv runsc containerd-shim-runsc-v1 /usr/local/bin/
+
+# Sanity check: runtime must print its version
+/usr/local/bin/runsc --version
 
 --BOUNDARY--
