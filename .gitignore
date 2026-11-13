@@ -2,4 +2,5 @@
 *.tfstate*
 .DS_Store
 /*.pdf
+article/*.pdf
 *.mmd

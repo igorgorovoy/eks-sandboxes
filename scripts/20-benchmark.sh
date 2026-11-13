@@ -11,22 +11,22 @@ set -euo pipefail
 #               Hypothesis for m8i.xlarge (4 vCPU): Nitro Sandbox limit 5x vCPU => ~20 pods.
 #               The script measures empirically, not per the docs.
 #
-# Results are appended to benchmark-results.csv: metric,runtime,subject,value
+# Results are appended to data/benchmark-results.csv: metric,runtime,subject,value
 #
-# Before run: terraform apply, kubectl apply -f 01-runtimeclass-gvisor.yaml,
-# pass the smoke test (10-smoke-tests.yaml), pin the gVisor version in gvisor.mime.
+# Before run: terraform apply, kubectl apply -f k8s/01-runtimeclass-gvisor.yaml,
+# pass the smoke test (k8s/10-smoke-tests.yaml), pin the gVisor version in terraform/gvisor.mime.
 #
 # Usage:
-#   ./20-benchmark.sh coldstart [runtime ...]
-#   ./20-benchmark.sh density   [runtime ...]
-#   ./20-benchmark.sh cleanup
+#   ./scripts/20-benchmark.sh coldstart [runtime ...]
+#   ./scripts/20-benchmark.sh density   [runtime ...]
+#   ./scripts/20-benchmark.sh cleanup
 # Runtimes: runc | nitro | nitro-net | gvisor (all by default)
-# Env: N=10 (coldstart pods)  MAX=60 (density)  TIMEOUT=900  POLL_INTERVAL=2  CSV=benchmark-results.csv
+# Env: N=10 (coldstart pods)  MAX=60 (density)  TIMEOUT=900  POLL_INTERVAL=2  CSV=data/benchmark-results.csv
 
 IMAGE="public.ecr.aws/docker/library/busybox:1.36"
 CPU="${CPU:-1}"
 MEM="${MEM:-512Mi}"
-CSV="${CSV:-benchmark-results.csv}"
+CSV="${CSV:-$(dirname "$0")/../data/benchmark-results.csv}"
 TIMEOUT="${TIMEOUT:-1800}"
 POLL_INTERVAL="${POLL_INTERVAL:-2}"
 
@@ -35,7 +35,7 @@ for bin in kubectl jq; do
 done
 
 usage() {
-  grep '^#   \./20-benchmark' "$0" | sed 's/^# *//'
+  grep '^#   \./scripts/20-benchmark' "$0" | sed 's/^# *//'
   exit 1
 }
 

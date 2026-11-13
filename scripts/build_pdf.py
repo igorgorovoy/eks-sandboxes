@@ -2,7 +2,7 @@
 """Markdown (with mermaid) -> styled PDF: mermaid-cli for diagrams, pandoc -> HTML, Chrome headless -> PDF.
 
 Usage:
-    python3 tools/build_pdf.py ARTICLE-UK.md ARTICLE.md [more .md files ...]
+    python3 scripts/build_pdf.py article/ARTICLE-UK.md article/ARTICLE.md [more .md files ...]
 Writes PDF next to each source file.
 Needs: pandoc, npx (node), Google Chrome at /Applications/Google Chrome.app.
 """

@@ -2,9 +2,9 @@
 # the agent (isolated-sandbox, has network) runs generated code in a separate pod
 # with network-isolated (no DNS, IMDS, Pod Identity, or SA token).
 # Exchange goes only through the API server: ConfigMap in, exec logs back.
-# Why not emptyDir — see PLAN.md (it is pod-scoped, and the annotation is pod-level).
+# Why not emptyDir — see article/PLAN.md (it is pod-scoped, and the annotation is pod-level).
 #
-# Hypotheses this manifest verifies (experiment 5 in PLAN.md):
+# Hypotheses this manifest verifies (experiment 5 in article/PLAN.md):
 #   1. A ConfigMap mounts inside the sandbox VM
 #   2. network-isolated cuts pod networking, but kubelet exec/logs still work
 #   3. The SA token is absent in a network-isolated pod (automountServiceAccountToken: false)
